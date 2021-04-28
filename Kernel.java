@@ -191,7 +191,7 @@ public class Kernel
    * <pre>
    *   extern int errno ;
    * </pre>
-   * @see getErrno
+   * @see
    */
   public static void setErrno( int newErrno )
   {
@@ -211,7 +211,7 @@ public class Kernel
    * <pre>
    *   extern int errno ;
    * </pre>
-   * @see setErrno
+   * @see
    */
   public static int getErrno()
   {
@@ -609,6 +609,28 @@ public class Kernel
     }
 
     return open( fileDescriptor ) ;
+  }
+
+  public static short umask(short newUmask) {
+    try {
+      newUmask = Short.parseShort(Short.toString(newUmask), 8);
+    } catch (NumberFormatException e) {
+      System.out.println(PROGRAM_NAME + ": invalid number for property process.umask");
+      System.exit(EXIT_FAILURE);
+    }
+
+    if (0 > newUmask || newUmask > Integer.parseInt("777", 8)) {
+      process.errno = EINVAL;
+      return -1;
+    }
+
+    short oldUmask = process.getUmask();
+    System.out.println("Old mask " + String.format("%16s", Integer.toBinaryString(oldUmask)));
+    System.out.println("New mask " + String.format("%16s", Integer.toBinaryString(newUmask)));
+
+    System.out.println("Set umask to " + String.format("%03o", newUmask));
+    process.setUmask(newUmask);
+    return oldUmask;
   }
 
   /**
