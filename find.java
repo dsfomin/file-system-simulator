@@ -1,18 +1,21 @@
 import java.util.Vector;
+import java.util.*;
 
-public class find {
+class find {
 
     public static String PROGRAM_NAME="find";
 
-    public static void main(Vector<String> args) throws Exception{
+    public static void main(String[] args) throws Exception{
 
+        List<String> list = Arrays.asList(args);
+        Vector<String> vColors = new Vector<String>( list );
         // initialize the file system simulator kernel
         Kernel.initialize() ;
 
         // for each path-name given
-        for( int i = 0 ; i < args.size() ; i ++ )
+        for( int i = 0 ; i < vColors.size() ; i ++ )
         {
-            String name = args.elementAt(i) ;
+            String name = vColors.elementAt(i) ;
             int status = 0 ;
 
             // stat the name to get information about the file or directory
