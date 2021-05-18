@@ -1602,5 +1602,81 @@ Some internal methods.
     return indexNodeNumber ;
   }
 
+  /* This function specifies an existing file and a path name,
+   * and creates a hard link from the existing file
+   * to the name specified by the path.
+   * Creating a link to a directory is not allowed.
+   */
+  public static int link(String filename, String pathname) throws Exception {
+    IndexNode indexNode = new IndexNode();
+
+    short indexNodeNumber = findIndexNode(filename, indexNode);
+    if (indexNodeNumber < 0) {
+      process.errno = ENOENT;
+      System.err.println("Error. The specified file (filename) does not exist.");
+      return -1;
+    }
+
+    // mask the file type from the mode
+    short type = (short)(indexNode.getMode() & S_IFMT);
+    if (type == S_IFDIR) {
+      process.errno = EISDIR;
+      System.err.println("Error. Creating a link to a directory is not allowed.");
+      return -1;
+    }
+
+    int lastIndexOfSlash = pathname.lastIndexOf('/');
+
+    String name = pathname.substring(lastIndexOfSlash + 1);
+    DirectoryEntry newDirectoryEntry = new DirectoryEntry(indexNodeNumber, name);
+
+    String directory = pathname.substring(0, lastIndexOfSlash);
+    if (directory.isEmpty()) { // if the specified path (pathname) is the root directory
+      directory = "/";
+    }
+
+    int fileDescriptor = open(directory, Kernel.O_RDWR);
+    if (fileDescriptor < 0) {
+      System.err.println("Error. Unable to open the directory for reading and writing.");
+      return -1;
+    }
+
+    int status = 0;
+    DirectoryEntry currentDirectoryEntry = new DirectoryEntry();
+    while (true) {
+      status = readdir(fileDescriptor, currentDirectoryEntry);
+
+      if (status > 0) {
+        if (currentDirectoryEntry.getName().equals(newDirectoryEntry.getName())) {
+          process.errno = EEXIST;
+          System.err.println("Error. The specified pathname is already in use. Change the pathname.");
+          status = -1;
+          break;
+        }
+      } else if (status < 0) {
+        perror(PROGRAM_NAME);
+        break;
+      } else { // status == 0 (end of directory)
+        writedir(fileDescriptor, newDirectoryEntry);
+        break;
+      }
+    }
+
+    close(fileDescriptor);
+
+    if (status < 0) {
+      return -1;
+    }
+
+    indexNode.setNlink((short) (indexNode.getNlink() + 1));
+
+    FileSystem fileSystem = openFileSystems[ROOT_FILE_SYSTEM];
+    fileSystem.writeIndexNode(indexNode, indexNodeNumber);
+
+    System.out.println("The hard link created successfully.");
+
+    return 0;
+  }
+
 }
 
