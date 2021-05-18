@@ -1613,6 +1613,7 @@ Some internal methods.
     short indexNodeNumber = findIndexNode(filename, indexNode);
     if (indexNodeNumber < 0) {
       process.errno = ENOENT;
+      System.err.println("Error. The specified file (filename) does not exist.");
       return -1;
     }
 
@@ -1620,6 +1621,7 @@ Some internal methods.
     short type = (short)(indexNode.getMode() & S_IFMT);
     if (type == S_IFDIR) {
       process.errno = EISDIR;
+      System.err.println("Error. Creating a link to a directory is not allowed.");
       return -1;
     }
 
@@ -1632,6 +1634,7 @@ Some internal methods.
 
     int fileDescriptor = open(directory, Kernel.O_RDWR);
     if (fileDescriptor < 0) {
+      System.err.println("Error. Unable to open the directory for reading and writing.");
       return -1;
     }
 
@@ -1643,10 +1646,12 @@ Some internal methods.
       if (status > 0) {
         if (currentDirectoryEntry.getName().equals(newDirectoryEntry.getName())) {
           process.errno = EEXIST;
+          System.err.println("Error. The specified pathname is already in use. Change the pathname.");
           status = -1;
           break;
         }
       } else if (status < 0) {
+        perror(PROGRAM_NAME);
         break;
       } else { // status == 0 (end of directory)
         writedir(fileDescriptor, newDirectoryEntry);
@@ -1664,6 +1669,8 @@ Some internal methods.
 
     FileSystem fileSystem = openFileSystems[ROOT_FILE_SYSTEM];
     fileSystem.writeIndexNode(indexNode, indexNodeNumber);
+
+    System.out.println("The hard link created successfully.");
 
     return 0;
   }
