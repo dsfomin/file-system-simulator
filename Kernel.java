@@ -456,6 +456,9 @@ public class Kernel
     int flags = O_WRONLY ; // ???
     FileDescriptor fileDescriptor = null ;
 
+    currIndexNode.setUid(process.getUid());
+    currIndexNode.setGid(process.getGid());
+
     if ( indexNodeNumber < 0 )
     {
       // file does not exist.  We check to see if we can create it.
