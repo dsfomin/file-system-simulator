@@ -1631,6 +1631,9 @@ Some internal methods.
     DirectoryEntry newDirectoryEntry = new DirectoryEntry(indexNodeNumber, name);
 
     String directory = pathname.substring(0, lastIndexOfSlash);
+    if (directory.isEmpty()) { // if the specified path (pathname) is the root directory
+      directory = "/";
+    }
 
     int fileDescriptor = open(directory, Kernel.O_RDWR);
     if (fileDescriptor < 0) {
