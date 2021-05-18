@@ -465,6 +465,39 @@ public class Kernel
       // return (EACCES) if the file does not exist and the directory
       // in which it is to be created is not writable
 
+
+
+      int protectionInfo = 0;
+
+      if ((mode & S_IFMT) == S_IFDIR) {
+        protectionInfo |= S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH
+                | S_IXOTH;
+      } else if ((mode & S_IFMT) == S_IFREG) {
+        protectionInfo |= S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
+      } else {
+        System.out.println("You're trying to create not regular file or directory");
+        return -1;
+      }
+
+      String protectionInfoOctal = Integer.toOctalString(protectionInfo),
+              umaskOctal = String.format("%03o", process.getUmask());
+
+      StringBuilder resultPermission = new StringBuilder();
+
+      for (int i = 0; i < protectionInfoOctal.length(); i++) {
+        if (protectionInfoOctal.charAt(i) >= umaskOctal.charAt(i))
+          resultPermission.append(protectionInfoOctal.charAt(i) - umaskOctal.charAt(i));
+        else
+          resultPermission.append(0);
+      }
+
+      protectionInfo = Integer.parseInt(resultPermission.toString(), 8);
+
+      int oldPermissions = mode % ((int) Math.pow(2, 9)), newMode = mode - oldPermissions + protectionInfo;
+
+
+
+
       currIndexNode.setMode( mode ) ;
       currIndexNode.setNlink( (short)1 ) ;
 
