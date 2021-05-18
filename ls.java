@@ -143,6 +143,13 @@ public class ls
     tableHead.append(columnName);
     tableHead.append(' ');
 
+    columnName = "[mode]";
+    for (int i = 0; i < (COLUMN_WIDTH - columnName.length()); i++) {
+      tableHead.append(' ');
+    }
+    tableHead.append(columnName);
+    tableHead.append(' ');
+
     columnName = "[size]";
     for (int i = 0; i < (COLUMN_WIDTH - columnName.length()); i++) {
       tableHead.append(' ');
@@ -187,24 +194,6 @@ public class ls
 
     // a temporary string
     String t = null ;
-    short type;
-
-	// append uid of file
-	type = stat.getUid();
-	s.append(' ');
-	s.append(type);
-	s.append(' ');
-
-	// append gid of file
-	type = stat.getGid();
-	s.append(' ');
-	s.append(type);
-	s.append(' ');
-
-	type = (short) stat.getMode();
-	s.append(Integer.toOctalString((type & Kernel.S_IRWXU) >> 6));
-	s.append(Integer.toOctalString((type & Kernel.S_IRWXG) >> 3));
-	s.append(Integer.toOctalString(type & Kernel.S_IRWXO));
 
     // append the inode number in a field of COLUMN_WIDTH
     t = Integer.toString( stat.getIno() ) ;
@@ -212,6 +201,16 @@ public class ls
       s.append( ' ' ) ;
     s.append( t ) ;
     s.append( ' ' ) ;
+
+    // append the 9 low-order bits of mode as a 3-digit octal number (i.e., 000..777) in a field of COLUMN_WIDTH
+    short mode = stat.getMode();
+    for (int i = 0; i < (COLUMN_WIDTH - 3); i++) {
+      s.append(' ');
+    }
+    s.append(Integer.toOctalString((mode & Kernel.S_IRWXU) >> 6));
+    s.append(Integer.toOctalString((mode & Kernel.S_IRWXG) >> 3));
+    s.append(Integer.toOctalString(mode & Kernel.S_IRWXO));
+    s.append(' ');
 
     // append the size in a field of COLUMN_WIDTH
     t = Integer.toString( stat.getSize() ) ;
