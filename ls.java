@@ -157,6 +157,20 @@ public class ls
     tableHead.append(columnName);
     tableHead.append(' ');
 
+    columnName = "[uid]";
+    for (int i = 0; i < (COLUMN_WIDTH - columnName.length()); i++) {
+      tableHead.append(' ');
+    }
+    tableHead.append(columnName);
+    tableHead.append(' ');
+
+    columnName = "[gid]";
+    for (int i = 0; i < (COLUMN_WIDTH - columnName.length()); i++) {
+      tableHead.append(' ');
+    }
+    tableHead.append(columnName);
+    tableHead.append(' ');
+
     System.out.println(tableHead.toString());
   }
 
@@ -190,6 +204,22 @@ public class ls
 
     // append the number of links to the file in a field of COLUMN_WIDTH
     t = Short.toString(stat.getNlink());
+    for (int i = 0; i < (COLUMN_WIDTH - t.length()); i++) {
+      s.append(' ');
+    }
+    s.append(t);
+    s.append(' ');
+
+    // append the owner's user id in a field of COLUMN_WIDTH
+    t = Short.toString(stat.getUid());
+    for (int i = 0; i < (COLUMN_WIDTH - t.length()); i++) {
+      s.append(' ');
+    }
+    s.append(t);
+    s.append(' ');
+
+    // append the owner's group id in a field of COLUMN_WIDTH
+    t = Short.toString(stat.getGid());
     for (int i = 0; i < (COLUMN_WIDTH - t.length()); i++) {
       s.append(' ');
     }

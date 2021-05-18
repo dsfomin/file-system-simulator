@@ -456,6 +456,9 @@ public class Kernel
     int flags = O_WRONLY ; // ???
     FileDescriptor fileDescriptor = null ;
 
+    currIndexNode.setUid(process.getUid());
+    currIndexNode.setGid(process.getGid());
+
     if ( indexNodeNumber < 0 )
     {
       // file does not exist.  We check to see if we can create it.
@@ -1674,6 +1677,26 @@ Some internal methods.
     fileSystem.writeIndexNode(indexNode, indexNodeNumber);
 
     System.out.println("The hard link created successfully.");
+
+    return 0;
+  }
+
+  // This function sets the file's uid and gid to the values given.
+  public static int chown(String filename, short uid, short gid) throws Exception {
+    IndexNode indexNode = new IndexNode();
+
+    short indexNodeNumber = findIndexNode(filename, indexNode);
+    if (indexNodeNumber < 0) {
+      process.errno = ENOENT;
+      System.err.println("Error. The specified file (filename) does not exist.");
+      return -1;
+    }
+
+    indexNode.setUid(uid);
+    indexNode.setGid(gid);
+
+    FileSystem fileSystem = openFileSystems[ROOT_FILE_SYSTEM];
+    fileSystem.writeIndexNode(indexNode, indexNodeNumber);
 
     return 0;
   }
