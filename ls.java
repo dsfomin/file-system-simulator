@@ -30,6 +30,8 @@ public class ls
    */
   public static String PROGRAM_NAME = "ls" ;
 
+  private static int COLUMN_WIDTH = 10;
+
   /**
    * Lists information about named files or directories.
    * @exception java.lang.Exception if an exception is thrown
@@ -81,6 +83,8 @@ public class ls
         System.out.println() ;
         System.out.println( name + ":" ) ;
 
+        printTableHead();
+
         // create a directory entry structure to hold data as we read
         DirectoryEntry directoryEntry = new DirectoryEntry() ;
         int count = 0 ;
@@ -129,6 +133,54 @@ public class ls
     Kernel.exit( 0 ) ;
   }
 
+  private static void printTableHead() {
+    StringBuilder tableHead = new StringBuilder();
+
+    String columnName = "[ino]";
+    for (int i = 0; i < (COLUMN_WIDTH - columnName.length()); i++) {
+      tableHead.append(' ');
+    }
+    tableHead.append(columnName);
+    tableHead.append(' ');
+
+    columnName = "[mode]";
+    for (int i = 0; i < (COLUMN_WIDTH - columnName.length()); i++) {
+      tableHead.append(' ');
+    }
+    tableHead.append(columnName);
+    tableHead.append(' ');
+
+    columnName = "[size]";
+    for (int i = 0; i < (COLUMN_WIDTH - columnName.length()); i++) {
+      tableHead.append(' ');
+    }
+    tableHead.append(columnName);
+    tableHead.append(' ');
+
+    columnName = "[nlink]";
+    for (int i = 0; i < (COLUMN_WIDTH - columnName.length()); i++) {
+      tableHead.append(' ');
+    }
+    tableHead.append(columnName);
+    tableHead.append(' ');
+
+    columnName = "[uid]";
+    for (int i = 0; i < (COLUMN_WIDTH - columnName.length()); i++) {
+      tableHead.append(' ');
+    }
+    tableHead.append(columnName);
+    tableHead.append(' ');
+
+    columnName = "[gid]";
+    for (int i = 0; i < (COLUMN_WIDTH - columnName.length()); i++) {
+      tableHead.append(' ');
+    }
+    tableHead.append(columnName);
+    tableHead.append(' ');
+
+    System.out.println(tableHead.toString());
+  }
+
   /**
    * Print a listing for a particular file.
    * This is a convenience method.
@@ -142,38 +194,54 @@ public class ls
 
     // a temporary string
     String t = null ;
-    short type;
 
-	// append uid of file
-	type = stat.getUid();
-	s.append(' ');
-	s.append(type);
-	s.append(' ');
-
-	// append gid of file
-	type = stat.getGid();
-	s.append(' ');
-	s.append(type);
-	s.append(' ');
-
-	type = (short) stat.getMode();
-	s.append(Integer.toOctalString((type & Kernel.S_IRWXU) >> 6));
-	s.append(Integer.toOctalString((type & Kernel.S_IRWXG) >> 3));
-	s.append(Integer.toOctalString(type & Kernel.S_IRWXO));
-
-    // append the inode number in a field of 5
+    // append the inode number in a field of COLUMN_WIDTH
     t = Integer.toString( stat.getIno() ) ;
-    for( int i = 0 ; i < 5 - t.length() ; i ++ )
+    for( int i = 0 ; i < (COLUMN_WIDTH - t.length()) ; i ++ )
       s.append( ' ' ) ;
     s.append( t ) ;
     s.append( ' ' ) ;
 
-    // append the size in a field of 10
+    // append the 9 low-order bits of mode as a 3-digit octal number (i.e., 000..777) in a field of COLUMN_WIDTH
+    short mode = stat.getMode();
+    for (int i = 0; i < (COLUMN_WIDTH - 3); i++) {
+      s.append(' ');
+    }
+    s.append(Integer.toOctalString((mode & Kernel.S_IRWXU) >> 6));
+    s.append(Integer.toOctalString((mode & Kernel.S_IRWXG) >> 3));
+    s.append(Integer.toOctalString(mode & Kernel.S_IRWXO));
+    s.append(' ');
+
+    // append the size in a field of COLUMN_WIDTH
     t = Integer.toString( stat.getSize() ) ;
-    for( int i = 0 ; i < 10 - t.length() ; i ++ )
+    for( int i = 0 ; i < (COLUMN_WIDTH - t.length()) ; i ++ )
       s.append( ' ' ) ;
     s.append( t ) ;
     s.append( ' ' ) ;
+
+    // append the number of links to the file in a field of COLUMN_WIDTH
+    t = Short.toString(stat.getNlink());
+    for (int i = 0; i < (COLUMN_WIDTH - t.length()); i++) {
+      s.append(' ');
+    }
+    s.append(t);
+    s.append(' ');
+
+    // append the owner's user id in a field of COLUMN_WIDTH
+    t = Short.toString(stat.getUid());
+    for (int i = 0; i < (COLUMN_WIDTH - t.length()); i++) {
+      s.append(' ');
+    }
+    s.append(t);
+    s.append(' ');
+
+    // append the owner's group id in a field of COLUMN_WIDTH
+    t = Short.toString(stat.getGid());
+    for (int i = 0; i < (COLUMN_WIDTH - t.length()); i++) {
+      s.append(' ');
+    }
+    s.append(t);
+    s.append(' ');
 
     // append the name
     s.append( name ) ;
