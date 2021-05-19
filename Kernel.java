@@ -1207,6 +1207,132 @@ public class Kernel {
         return 0;
     }
 
+    /* This function specifies an existing file and a path name,
+     * and creates a hard link from the existing file
+     * to the name specified by the path.
+     * Creating a link to a directory is not allowed.
+     */
+    public static int link(String filename, String pathname) throws Exception {
+        IndexNode indexNode = new IndexNode();
+
+        short indexNodeNumber = findIndexNode(filename, indexNode);
+        if (indexNodeNumber < 0) {
+            process.errno = ENOENT;
+            System.err.println("Error. The specified file (filename) does not exist.");
+            return -1;
+        }
+
+        // mask the file type from the mode
+        short type = (short) (indexNode.getMode() & S_IFMT);
+        if (type == S_IFDIR) {
+            process.errno = EISDIR;
+            System.err.println("Error. Creating a link to a directory is not allowed.");
+            return -1;
+        }
+
+        int lastIndexOfSlash = pathname.lastIndexOf('/');
+
+        String name = pathname.substring(lastIndexOfSlash + 1);
+        DirectoryEntry newDirectoryEntry = new DirectoryEntry(indexNodeNumber, name);
+
+        String directory = pathname.substring(0, lastIndexOfSlash);
+        if (directory.isEmpty()) { // if the specified path (pathname) is the root directory
+            directory = "/";
+        }
+
+        int fileDescriptor = open(directory, Kernel.O_RDWR);
+        if (fileDescriptor < 0) {
+            System.err.println("Error. Unable to open the directory for reading and writing.");
+            return -1;
+        }
+
+        int status = 0;
+        DirectoryEntry currentDirectoryEntry = new DirectoryEntry();
+        while (true) {
+            status = readdir(fileDescriptor, currentDirectoryEntry);
+
+            if (status > 0) {
+                if (currentDirectoryEntry.getName().equals(newDirectoryEntry.getName())) {
+                    process.errno = EEXIST;
+                    System.err.println("Error. The specified pathname is already in use. Change the pathname.");
+                    status = -1;
+                    break;
+                }
+            } else if (status < 0) {
+                perror(PROGRAM_NAME);
+                break;
+            } else { // status == 0 (end of directory)
+                writedir(fileDescriptor, newDirectoryEntry);
+                break;
+            }
+        }
+
+        close(fileDescriptor);
+
+        if (status < 0) {
+            return -1;
+        }
+
+        indexNode.setNlink((short) (indexNode.getNlink() + 1));
+
+        FileSystem fileSystem = openFileSystems[ROOT_FILE_SYSTEM];
+        fileSystem.writeIndexNode(indexNode, indexNodeNumber);
+
+        System.out.println("The hard link created successfully.");
+
+        return 0;
+    }
+
+    // This function sets the file's uid and gid to the values given.
+    public static int chown(String filename, short uid, short gid) throws Exception {
+        if ((uid < 0) && (gid < 0)) {
+            System.out.println("[" + filename + "]: Neither uid nor gid changed. " +
+                    "No actions needed as the specified uid and gid are less than zero (< 0).");
+            return 0;
+        }
+
+        IndexNode indexNode = new IndexNode();
+
+        short indexNodeNumber = findIndexNode(filename, indexNode);
+        if (indexNodeNumber < 0) {
+            process.errno = ENOENT;
+            System.err.println("[" + filename + "]: Error. The specified file (filename) does not exist.");
+            return -1;
+        }
+
+        FileSystem fileSystem = openFileSystems[ROOT_FILE_SYSTEM];
+
+        int status = 0;
+
+        if (uid >= 0) {
+            if (process.getUid() == 0) { // the user with a user identifier (UID) of zero is the superuser
+                indexNode.setUid(uid);
+                fileSystem.writeIndexNode(indexNode, indexNodeNumber);
+                System.out.println("[" + filename + "]: The file's uid changed successfully.");
+            } else {
+                process.errno = EACCES;
+                System.err.println("[" + filename + "]: Error. Unable to change the file's uid. Permission denied. " +
+                        "Only the super-user may change the uid of a file.");
+                status = -1;
+            }
+        }
+
+        if (gid >= 0) {
+            if ((process.getUid() == indexNode.getUid()) || (process.getUid() == 0)) {
+                indexNode.setGid(gid);
+                fileSystem.writeIndexNode(indexNode, indexNodeNumber);
+                System.out.println("[" + filename + "]: The file's gid changed successfully.");
+            } else {
+                process.errno = EACCES;
+                System.err.println("[" + filename + "]: Error. Unable to change the file's gid. Permission denied. " +
+                        "Only the owner of a file (or the super-user) may change the gid of a file.");
+                status = -1;
+            }
+        }
+
+        return status;
+    }
+
     /**
      * This is an internal variable for the simulator which always
      * points to the
@@ -1599,132 +1725,6 @@ Some internal methods.
         // copy indexNode to inode
         indexNode.copy(inode);
         return indexNodeNumber;
-    }
-
-    /* This function specifies an existing file and a path name,
-     * and creates a hard link from the existing file
-     * to the name specified by the path.
-     * Creating a link to a directory is not allowed.
-     */
-    public static int link(String filename, String pathname) throws Exception {
-        IndexNode indexNode = new IndexNode();
-
-        short indexNodeNumber = findIndexNode(filename, indexNode);
-        if (indexNodeNumber < 0) {
-            process.errno = ENOENT;
-            System.err.println("Error. The specified file (filename) does not exist.");
-            return -1;
-        }
-
-        // mask the file type from the mode
-        short type = (short) (indexNode.getMode() & S_IFMT);
-        if (type == S_IFDIR) {
-            process.errno = EISDIR;
-            System.err.println("Error. Creating a link to a directory is not allowed.");
-            return -1;
-        }
-
-        int lastIndexOfSlash = pathname.lastIndexOf('/');
-
-        String name = pathname.substring(lastIndexOfSlash + 1);
-        DirectoryEntry newDirectoryEntry = new DirectoryEntry(indexNodeNumber, name);
-
-        String directory = pathname.substring(0, lastIndexOfSlash);
-        if (directory.isEmpty()) { // if the specified path (pathname) is the root directory
-            directory = "/";
-        }
-
-        int fileDescriptor = open(directory, Kernel.O_RDWR);
-        if (fileDescriptor < 0) {
-            System.err.println("Error. Unable to open the directory for reading and writing.");
-            return -1;
-        }
-
-        int status = 0;
-        DirectoryEntry currentDirectoryEntry = new DirectoryEntry();
-        while (true) {
-            status = readdir(fileDescriptor, currentDirectoryEntry);
-
-            if (status > 0) {
-                if (currentDirectoryEntry.getName().equals(newDirectoryEntry.getName())) {
-                    process.errno = EEXIST;
-                    System.err.println("Error. The specified pathname is already in use. Change the pathname.");
-                    status = -1;
-                    break;
-                }
-            } else if (status < 0) {
-                perror(PROGRAM_NAME);
-                break;
-            } else { // status == 0 (end of directory)
-                writedir(fileDescriptor, newDirectoryEntry);
-                break;
-            }
-        }
-
-        close(fileDescriptor);
-
-        if (status < 0) {
-            return -1;
-        }
-
-        indexNode.setNlink((short) (indexNode.getNlink() + 1));
-
-        FileSystem fileSystem = openFileSystems[ROOT_FILE_SYSTEM];
-        fileSystem.writeIndexNode(indexNode, indexNodeNumber);
-
-        System.out.println("The hard link created successfully.");
-
-        return 0;
-    }
-
-    // This function sets the file's uid and gid to the values given.
-    public static int chown(String filename, short uid, short gid) throws Exception {
-        if ((uid < 0) && (gid < 0)) {
-            System.out.println("[" + filename + "]: Neither uid nor gid changed. " +
-                    "No actions needed as the specified uid and gid are less than zero (< 0).");
-            return 0;
-        }
-
-        IndexNode indexNode = new IndexNode();
-
-        short indexNodeNumber = findIndexNode(filename, indexNode);
-        if (indexNodeNumber < 0) {
-            process.errno = ENOENT;
-            System.err.println("[" + filename + "]: Error. The specified file (filename) does not exist.");
-            return -1;
-        }
-
-        FileSystem fileSystem = openFileSystems[ROOT_FILE_SYSTEM];
-
-        int status = 0;
-
-        if (uid >= 0) {
-            if (process.getUid() == 0) { // the user with a user identifier (UID) of zero is the superuser
-                indexNode.setUid(uid);
-                fileSystem.writeIndexNode(indexNode, indexNodeNumber);
-                System.out.println("[" + filename + "]: The file's uid changed successfully.");
-            } else {
-                process.errno = EACCES;
-                System.err.println("[" + filename + "]: Error. Unable to change the file's uid. Permission denied. " +
-                        "Only the super-user may change the uid of a file.");
-                status = -1;
-            }
-        }
-
-        if (gid >= 0) {
-            if ((process.getUid() == indexNode.getUid()) || (process.getUid() == 0)) {
-                indexNode.setGid(gid);
-                fileSystem.writeIndexNode(indexNode, indexNodeNumber);
-                System.out.println("[" + filename + "]: The file's gid changed successfully.");
-            } else {
-                process.errno = EACCES;
-                System.err.println("[" + filename + "]: Error. Unable to change the file's gid. Permission denied. " +
-                        "Only the owner of a file (or the super-user) may change the gid of a file.");
-                status = -1;
-            }
-        }
-
-        return status;
     }
 
 }
