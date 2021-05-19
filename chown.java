@@ -21,7 +21,7 @@ public class chown {
 
             int status = Kernel.chown(filename, uid, (short) -1);
             if (status < 0) {
-                System.err.println(PROGRAM_NAME + ": Unable to change the file's uid.");
+                System.err.println(PROGRAM_NAME + ": The " + PROGRAM_NAME + " program aborted due to the error.");
                 Kernel.exit(3);
                 System.exit(3);
             }
