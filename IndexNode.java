@@ -70,20 +70,17 @@ public class IndexNode
    */
   private short mode = 0 ;
 
-  /*
-   * Not yet implemented.
+  /**
    * Number of links to this file.  
    */
   private short nlink  = 0 ;
 
-  /*
-   * Not yet implemented.
+  /**
    * Owner's user id. 
    */
   private short uid = 0 ;
 
-  /*
-   * Not yet implemented.
+  /**
    * Owner's group id.
    */
   private short gid = 0 ;
