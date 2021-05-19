@@ -1683,6 +1683,12 @@ Some internal methods.
 
   // This function sets the file's uid and gid to the values given.
   public static int chown(String filename, short uid, short gid) throws Exception {
+    if ((uid < 0) && (gid < 0)) {
+      System.out.println("Neither uid nor gid changed. " +
+              "No actions needed as the specified uid and gid are less than zero (< 0).");
+      return 0;
+    }
+
     IndexNode indexNode = new IndexNode();
 
     short indexNodeNumber = findIndexNode(filename, indexNode);
@@ -1692,13 +1698,37 @@ Some internal methods.
       return -1;
     }
 
-    indexNode.setUid(uid);
-    indexNode.setGid(gid);
-
     FileSystem fileSystem = openFileSystems[ROOT_FILE_SYSTEM];
-    fileSystem.writeIndexNode(indexNode, indexNodeNumber);
 
-    return 0;
+    int status = 0;
+
+    if (uid >= 0) {
+      if (process.getUid() == 0) {
+        indexNode.setUid(uid);
+        fileSystem.writeIndexNode(indexNode, indexNodeNumber);
+        System.out.println("The file's uid changed successfully.");
+      } else {
+        process.errno = EACCES;
+        System.err.println("Error. Unable to change the file's uid. Permission denied. " +
+                "Only the super-user may change the uid of a file.");
+        status = -1;
+      }
+    }
+
+    if (gid >= 0) {
+      if ((process.getUid() == indexNode.getUid()) || (process.getUid() == 0)) {
+        indexNode.setGid(gid);
+        fileSystem.writeIndexNode(indexNode, indexNodeNumber);
+        System.out.println("The file's gid changed successfully.");
+      } else {
+        process.errno = EACCES;
+        System.err.println("Error. Unable to change the file's gid. Permission denied. " +
+                "Only the owner of a file (or the super-user) may change the gid of a file.");
+        status = -1;
+      }
+    }
+
+    return status;
   }
 
 }
