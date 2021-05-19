@@ -61,7 +61,7 @@ public class DirectoryEntry
    * Note that the name is stored internally as a byte[],
    * not as a string.
    * @param ino the inode number for this DirectoryEntry
-   * @param name the file name for this DirectoryEntry
+   * @param name tEhe file name for this Directoryntry
    */
   public DirectoryEntry(short ino, String name) 
   {
@@ -95,10 +95,7 @@ public class DirectoryEntry
   public void setName( String newName )
   {
     for( int i = 0 ; i < MAX_FILENAME_LENGTH && i < newName.length() ; i ++ )
-      if( i < newName.length() )
-        d_name[i] = (byte)newName.charAt(i) ;
-      else
-        d_name[i] = (byte)0 ;
+      d_name[i] = (byte)newName.charAt(i) ;
   }
 
   /**
@@ -107,7 +104,7 @@ public class DirectoryEntry
    */
   public String getName()
   {
-    StringBuffer s = new StringBuffer( MAX_FILENAME_LENGTH ) ;
+    StringBuilder s = new StringBuilder( MAX_FILENAME_LENGTH ) ;
     for( int i = 0 ; i < MAX_FILENAME_LENGTH ; i ++ )
     {
       if ( d_name[i] == (byte)0 )
@@ -154,20 +151,13 @@ public class DirectoryEntry
    */
   public String toString()
   {
-    StringBuffer s = new StringBuffer( "DirectoryEntry[" ) ;
-    s.append( getIno() ) ;
-    s.append(',') ;
-    s.append( getName() ) ;
-    s.append(']') ;
-    return s.toString() ;
+    return "DirectoryEntry[" + getIno() + ',' + getName() + ']';
   }
 
   /**
    * A test driver for this class.
-   * @exception java.lang.Exception any exception which may occur.
    */
-  public static void main( String[] args ) throws Exception
-  {
+  public static void main( String[] args ) {
     DirectoryEntry root = new DirectoryEntry( (short)1 , "/" ) ;
     System.out.println( root.toString() ) ;
   }

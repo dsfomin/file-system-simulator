@@ -4,6 +4,7 @@ public class chmod {
     public static final String PROGRAM_NAME = "chmod" ;
 
     public static void main(String[] args) {
+        // read from console input arguments
         ArrayList<String> filename = new ArrayList<>();
         ArrayList<Short> mode = new ArrayList<>();
         if (args.length % 2 == 0 && args.length != 0) {
@@ -21,18 +22,19 @@ public class chmod {
         }
 
         try {
+            // initialize the file system simulator kernel
             Kernel.initialize();
 
+            // change mode of all filenames from the input if it's possible
             for (int i = 0; i < filename.size(); i++) {
                 int res = Kernel.chmod( filename.get(i) , mode.get(i) ) ;
-                if( res < 0 )
+                if ( res < 0 )
                 {
                     Kernel.perror( PROGRAM_NAME ) ;
                     System.err.println( PROGRAM_NAME + ": cannot to change mode file \"" + filename.get(i) + "\"" ) ;
                     Kernel.exit( 3 ) ;
                 }
             }
-
             Kernel.exit(0);
         } catch (Exception e) {
             e.printStackTrace();

@@ -30,7 +30,7 @@ public class ls
    */
   public static String PROGRAM_NAME = "ls" ;
 
-  private static int COLUMN_WIDTH = 10;
+  private static final int COLUMN_WIDTH = 10;
 
   /**
    * Lists information about named files or directories.
@@ -43,89 +43,79 @@ public class ls
     Kernel.initialize() ;
 
     // for each path-name given
-    for( int i = 0 ; i < args.length ; i ++ )
-    {
-      String name = args[i] ; 
-      int status = 0 ;
+    for (String name : args) {
+      int status;
 
       // stat the name to get information about the file or directory
-      Stat stat = new Stat() ;
-      status = Kernel.stat( name , stat ) ;
-      if( status < 0 )
-      {
-        Kernel.perror( PROGRAM_NAME ) ;
-        Kernel.exit( 1 ) ;
+      Stat stat = new Stat();
+      status = Kernel.stat(name, stat);
+      if (status < 0) {
+        Kernel.perror(PROGRAM_NAME);
+        Kernel.exit(1);
       }
 
       // mask the file type from the mode
-      short type = (short)( stat.getMode() & Kernel.S_IFMT ) ;
+      short type = (short) (stat.getMode() & Kernel.S_IFMT);
 
       // if name is a regular file, print the info
-      if( type == Kernel.S_IFREG )
-      {
-        print( name , stat ) ;
+      if (type == Kernel.S_IFREG) {
+        print(name, stat);
       }
-   
+
       // if name is a directory open it and read the contents
-      else if( type == Kernel.S_IFDIR )
-      {
+      else if (type == Kernel.S_IFDIR) {
         // open the directory
-        int fd = Kernel.open( name , Kernel.O_RDONLY ) ;
-        if( fd < 0 )
-        {
-          Kernel.perror( PROGRAM_NAME ) ;
-          System.err.println( PROGRAM_NAME + 
-            ": unable to open \"" + name + "\" for reading" ) ;
-          Kernel.exit(1) ;
+        int fd = Kernel.open(name, Kernel.O_RDONLY);
+        if (fd < 0) {
+          Kernel.perror(PROGRAM_NAME);
+          System.err.println(PROGRAM_NAME + ": unable to open \"" + name + "\" for reading");
+          Kernel.exit(1);
         }
 
         // print a heading for this directory
-        System.out.println() ;
-        System.out.println( name + ":" ) ;
+        System.out.println();
+        System.out.println(name + ":");
 
         printTableHead();
 
         // create a directory entry structure to hold data as we read
-        DirectoryEntry directoryEntry = new DirectoryEntry() ;
-        int count = 0 ;
+        DirectoryEntry directoryEntry = new DirectoryEntry();
+        int count = 0;
 
         // while we can read, print the information on each entry
-        while( true ) 
-        {
+        while (true) {
           // read an entry; quit loop if error or nothing read
-          status = Kernel.readdir( fd , directoryEntry ) ;
-          if( status <= 0 )
-            break ;
+          status = Kernel.readdir(fd, directoryEntry);
+          if (status <= 0)
+            break;
 
           // get the name from the entry
-          String entryName = directoryEntry.getName() ;
+          String entryName = directoryEntry.getName();
 
           // call stat() to get info about the file
-          status = Kernel.stat( name + "/" + entryName , stat ) ;
-          if( status < 0 )
-          {
-            Kernel.perror( PROGRAM_NAME ) ;
-            Kernel.exit( 1 ) ;
+          status = Kernel.stat(name + "/" + entryName, stat);
+          if (status < 0) {
+            Kernel.perror(PROGRAM_NAME);
+            Kernel.exit(1);
           }
 
           // print the entry information
-          print( entryName , stat ) ;
-          count ++ ;
+          print(entryName, stat);
+          count++;
         }
 
         // check to see if our last read failed
-        if( status < 0 )
-        {
-          Kernel.perror( "main" ) ;
-          System.err.println( "main: unable to read directory entry from /" ) ;
-          Kernel.exit(2) ;
+        if (status < 0) {
+          Kernel.perror("main");
+          System.err.println("main: unable to read directory entry from /");
+          Kernel.exit(2);
         }
 
         // close the directory
-        Kernel.close( fd ) ;
+        Kernel.close(fd);
 
         // print a footing for this directory
-        System.out.println( "total files: " + count ) ;
+        System.out.println("total files: " + count);
       }
     }
 
@@ -178,6 +168,13 @@ public class ls
     tableHead.append(columnName);
     tableHead.append(' ');
 
+    columnName = "[name]";
+    for (int i = 0; i < (COLUMN_WIDTH - columnName.length()); i++) {
+      tableHead.append(' ');
+    }
+    tableHead.append(columnName);
+    tableHead.append(' ');
+
     System.out.println(tableHead.toString());
   }
 
@@ -190,10 +187,10 @@ public class ls
   private static void print( String name , Stat stat )
   {
     // a buffer to fill with a line of output
-    StringBuffer s = new StringBuffer() ;
+    StringBuilder s = new StringBuilder() ;
 
     // a temporary string
-    String t = null ;
+    String t;
 
     // append the inode number in a field of COLUMN_WIDTH
     t = Integer.toString( stat.getIno() ) ;
@@ -244,10 +241,14 @@ public class ls
     s.append(' ');
 
     // append the name
-    s.append( name ) ;
+    t = name;
+    for (int i = 0; i < (COLUMN_WIDTH - t.length()); i++) {
+      s.append(' ');
+    }
+    s.append(t);
+    s.append(' ');
 
     // print the buffer
     System.out.println( s.toString() ) ;
   }
-
 }

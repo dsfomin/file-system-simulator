@@ -38,8 +38,7 @@ public class FileDescriptor
     bytes = new byte[fileSystem.getBlockSize()] ;
   }
 
-  FileDescriptor( FileSystem newFileSystem , IndexNode newIndexNode ,
-    int newFlags )
+  FileDescriptor( FileSystem newFileSystem , IndexNode newIndexNode , int newFlags )
   {
     super() ;
     fileSystem = newFileSystem ;
@@ -126,8 +125,7 @@ public class FileDescriptor
     }
     // ask the IndexNode for the actual block number 
     // given the relative block number
-    int blockOffset = 
-      indexNode.getBlockAddress( relativeBlockNumber ) ;
+    int blockOffset = indexNode.getBlockAddress( relativeBlockNumber ) ;
 
     if( blockOffset == FileSystem.NOT_A_BLOCK )
     {
@@ -139,8 +137,7 @@ public class FileDescriptor
     else
     {
       // read the actual block into bytes
-      fileSystem.read( bytes , 
-        fileSystem.getDataBlockOffset() + blockOffset ) ;
+      fileSystem.read( bytes , fileSystem.getDataBlockOffset() + blockOffset ) ;
     }
     return 0 ;
   }
@@ -155,8 +152,7 @@ public class FileDescriptor
     }
     // ask the IndexNode for the actual block number 
     // given the relative block number
-    int blockOffset = 
-      indexNode.getBlockAddress( relativeBlockNumber ) ;
+    int blockOffset = indexNode.getBlockAddress( relativeBlockNumber ) ;
 
     if( blockOffset == FileSystem.NOT_A_BLOCK )
     {
