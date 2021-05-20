@@ -340,7 +340,7 @@ public class Kernel {
     public static final short S_IROTH = 04;
 
     /**
-     * Others have write permisson
+     * Others have write permission
      */
     public static final short S_IWOTH = 02;
 
@@ -491,13 +491,13 @@ public class Kernel {
             // assign inode for the new file
             fileDescriptor.setIndexNodeNumber(newInode);
 
-// System.out.println( "newInode = " + newInode ) ;
+            // System.out.println( "newInode = " + newInode ) ;
             fileSystem.writeIndexNode(currIndexNode, newInode);
 
             // open the directory
             // ??? it would be nice if we had an "open" that took an inode
             // instead of a name for the dir
-// System.out.println( "dirname = " + dirname.toString() ) ;
+            // System.out.println( "dirname = " + dirname.toString() ) ;
             int dir = open(dirname.toString(), O_RDWR);
             if (dir < 0) {
                 Kernel.perror(PROGRAM_NAME);
@@ -1176,25 +1176,25 @@ public class Kernel {
             Kernel.exit(1);
         }
 
-        if (process.getUid() != 0) {
-            short mode = indexNode.getMode();
-            if (indexNode.getUid() == process.getUid()) {
-                if ((mode & S_IWUSR) == 0) {
-                    System.err.println(PROGRAM_NAME + ": Permission denied by uid");
-                    Kernel.exit(3);
-                }
-            } else if (indexNode.getGid() == process.getGid()) {
-                if ((mode & S_IWGRP) == 0) {
-                    System.err.println(PROGRAM_NAME + ": Permission denied by gid");
-                    Kernel.exit(3);
-                }
-            } else {
-                if ((mode & S_IWOTH) == 0) {
-                    System.err.println(PROGRAM_NAME + ": Permission denied by others");
-                    Kernel.exit(3);
-                }
-            }
-        }
+//        if (process.getUid() != 0) {
+//            short mode = indexNode.getMode();
+//            if (indexNode.getUid() == process.getUid()) {
+//                if ((mode & S_IWUSR) == 0) {
+//                    System.err.println(PROGRAM_NAME + ": Permission denied: User has not write permission");
+//                    Kernel.exit(3);
+//                }
+//            } else if (indexNode.getGid() == process.getGid()) {
+//                if ((mode & S_IWGRP) == 0) {
+//                    System.err.println(PROGRAM_NAME + ": Permission denied: Group has not write permission");
+//                    Kernel.exit(3);
+//                }
+//            } else {
+//                if ((mode & S_IWOTH) == 0) {
+//                    System.err.println(PROGRAM_NAME + ": Permission denied: Others have not write permission");
+//                    Kernel.exit(3);
+//                }
+//            }
+//        }
 
         if (indexNode.getUid() == process.getUid() || process.getUid() == 0) {
             indexNode.setMode((short) ((indexNode.getMode() & (~0777)) | new_mode));
