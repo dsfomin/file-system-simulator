@@ -931,6 +931,52 @@ public class Kernel {
         return DirectoryEntry.DIRECTORY_ENTRY_SIZE;
     }
 
+    // TODO: Review the code.
+    public static int removeDirectoryEntry(int fileDescriptor, String directoryEntryName) throws Exception {
+        FileDescriptor directory = process.openFiles[fileDescriptor];
+
+        DirectoryEntry currentDirectoryEntry = new DirectoryEntry();
+
+        int status = 0;
+        while (true) {
+            status = readdir(fileDescriptor, currentDirectoryEntry);
+
+            if (status > 0) {
+                if (currentDirectoryEntry.getName().equals(directoryEntryName)) {
+                    break;
+                }
+            } else if (status < 0) {
+                return -1;
+            } else {
+                return -1;
+            }
+        }
+
+        int offsetToRemovedDirectoryEntry = directory.getOffset() - DirectoryEntry.DIRECTORY_ENTRY_SIZE;
+
+        lseek(fileDescriptor, -DirectoryEntry.DIRECTORY_ENTRY_SIZE, 2); // lseek to the last directory entry
+
+        DirectoryEntry lastDirectoryEntry = new DirectoryEntry();
+
+        status = readdir(fileDescriptor, lastDirectoryEntry);
+        if (status <= 0) {
+            return -1;
+        }
+
+        if (!lastDirectoryEntry.getName().equals(directoryEntryName)) {
+            lseek(fileDescriptor, offsetToRemovedDirectoryEntry, 0); // lseek to the removed directory entry
+
+            status = writedir(fileDescriptor, lastDirectoryEntry);
+            if (status <= 0) {
+                return -1;
+            }
+        }
+
+        directory.setSize(directory.getSize() - DirectoryEntry.DIRECTORY_ENTRY_SIZE);
+
+        return 0;
+    }
+
     /**
      * Obtain information for an open file.
      * <p>
@@ -1279,6 +1325,71 @@ public class Kernel {
         fileSystem.writeIndexNode(indexNode, indexNodeNumber);
 
         System.out.println("The hard link created successfully.");
+
+        return 0;
+    }
+
+    // TODO: Review the code.
+    public static int unlink(String pathname) throws Exception {
+        IndexNode indexNode = new IndexNode();
+
+        short indexNodeNumber = findIndexNode(pathname, indexNode);
+        if (indexNodeNumber < 0) {
+            process.errno = ENOENT;
+            System.err.println("Error. The specified file (pathname) does not exist.");
+            return -1;
+        }
+
+        // mask the file type from the mode
+        short type = (short) (indexNode.getMode() & S_IFMT);
+        if (type == S_IFDIR) {
+            process.errno = EISDIR;
+            System.err.println("Error. Unlinking a directory is not allowed.");
+            return -1;
+        }
+
+        int lastIndexOfSlash = pathname.lastIndexOf('/');
+
+        String filename = pathname.substring(lastIndexOfSlash + 1);
+        String directoryPath = pathname.substring(0, lastIndexOfSlash);
+        if (directoryPath.isEmpty()) { // if the specified path (pathname) is the root directory
+            directoryPath = "/";
+        }
+
+        int fileDescriptor = open(directoryPath, Kernel.O_RDWR);
+        if (fileDescriptor < 0) {
+            System.err.println("Error. Unable to open the directory for reading and writing.");
+            return -1;
+        }
+
+        int status = removeDirectoryEntry(fileDescriptor, filename);
+        if (status < 0) {
+            System.err.println("Error. Unable to remove the directory entry.");
+            return -1;
+        }
+
+        close(fileDescriptor);
+
+        indexNode.setNlink((short) (indexNode.getNlink() - 1));
+
+        FileSystem fileSystem = openFileSystems[ROOT_FILE_SYSTEM];
+
+        if (indexNode.getNlink() == 0) {
+            for (int i = 0; i < IndexNode.MAX_DIRECT_BLOCKS; i++) {
+                int blockAddress = indexNode.getBlockAddress(i);
+
+                if (blockAddress != FileSystem.NOT_A_BLOCK) {
+                    fileSystem.freeBlock(blockAddress);
+                    indexNode.setBlockAddress(i, FileSystem.NOT_A_BLOCK);
+                }
+            }
+
+            indexNode.setSize(0);
+        }
+
+        fileSystem.writeIndexNode(indexNode, indexNodeNumber);
+
+        System.out.println("The file unlinked successfully.");
 
         return 0;
     }
